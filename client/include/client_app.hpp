@@ -35,6 +35,7 @@ struct ClientApp final : Application, network::IConnectionListener {
    void CheckPlayerPosition(uint32 serverTick, Vector2 serverPosition);
    void FixPlayerPositions(uint32 serverTick, Vector2 serverPosition);
    virtual void on_send(network::Connection *connection, const uint16 sequence, network::NetworkStreamWriter &writer);
+   void Synchronize(uint32 serverTick);
 
    Mouse &mouse_;
    Keyboard &keyboard_;

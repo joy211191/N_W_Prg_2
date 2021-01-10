@@ -45,7 +45,7 @@ namespace charlie {
 
       struct NetowrkNewConnection {
           NetowrkNewConnection();
-          explicit NetowrkNewConnection(const int32 playerId);
+          explicit NetowrkNewConnection(const int32 playerId,uint32 connectionTick);
 
           bool read(NetworkStreamReader& reader);
           bool write(NetworkStreamWriter& writer);
@@ -56,16 +56,18 @@ namespace charlie {
               bool result = true;
               result &= stream.serialize(type_);
               result &= stream.serialize(playerID_);
+              result &= stream.serialize(connectionTick_);
               return result;
           }
 
           uint8 type_;
           int32 playerID_;
+          uint32 connectionTick_;
       };
 
       struct NetworkMessageEntityState {
          NetworkMessageEntityState();
-         explicit NetworkMessageEntityState(uint32 id, const Vector2 &position);
+         explicit NetworkMessageEntityState(int32 id, const Vector2 &position);
 
          bool read(NetworkStreamReader &reader);
          bool write(NetworkStreamWriter &writer);
@@ -80,14 +82,14 @@ namespace charlie {
             result &= stream.serialize(id_);
             return result;
          }
-         uint32 id_;
+         int32 id_;
          uint8 type_;
          Vector2 position_;
       };
 
       struct NetworkMessageInputCommand {
          NetworkMessageInputCommand();
-         explicit NetworkMessageInputCommand(uint8 bits,uint32 tick);
+         explicit NetworkMessageInputCommand(uint8 bits,uint32 tick,uint32 offsetTick);
 
          bool read(NetworkStreamReader &reader);
          bool write(NetworkStreamWriter &writer);
@@ -99,12 +101,14 @@ namespace charlie {
             result &= stream.serialize(type_);
             result &= stream.serialize(bits_);
             result &= stream.serialize(tick_);
+            result &= stream.serialize(offsetTick_);
             return result;
          }
 
          uint8 type_;
          uint8 bits_;
          uint32 tick_;
+         uint32 offsetTick_;
       };
 
       struct NetworkMessagePlayerState {

@@ -2,6 +2,7 @@
 
 #ifndef SERVER_APP_HPP_INCLUDED
 #define SERVER_APP_HPP_INCLUDED
+constexpr float SPEED = 100;
 
 #include <charlie_application.hpp>
 
@@ -58,6 +59,7 @@ struct ServerApp final : Application, network::IServiceListener, network::IConne
    virtual bool on_init();
    virtual void on_exit();
    virtual bool on_tick(const Time &dt);
+   Vector2 GetInputDirection(uint8 input);
    virtual void on_draw();
 
    // note: IServiceListener
@@ -72,7 +74,7 @@ struct ServerApp final : Application, network::IServiceListener, network::IConne
 
    const Time tickrate_;
    Time accumulator_;
-   uint32 tick_;
+   uint32 serverTick;
    ClientList clients_;
 
    charlie::DynamicArray<gameplay::Entity>bullets_;
@@ -84,6 +86,9 @@ struct ServerApp final : Application, network::IServiceListener, network::IConne
 
    bool newConnection;
    int32 newConnectionID;
+
+   Vector2 direction;
+   uint8 tempInput;
 
 };
 

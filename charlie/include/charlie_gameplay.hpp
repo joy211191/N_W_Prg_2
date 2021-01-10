@@ -8,7 +8,7 @@
 namespace charlie {
     namespace gameplay {
         struct Entity {
-            uint8 id;
+            int32 id;
             Vector2 position_;
             Color playerColor;
         };
@@ -40,6 +40,7 @@ namespace charlie {
             Vector2 calculatedPosition;
             int32 playerID;
             Color playerColor;
+            uint32 offsetTick;
             charlie::DynamicArray<Inputinator> inputLibrary;
         };
 

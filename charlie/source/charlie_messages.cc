@@ -32,13 +32,15 @@ namespace charlie {
 
       NetowrkNewConnection::NetowrkNewConnection()
           : type_(NETWORK_NEW_CONNECTION)
-          , playerID_(0)
+          , playerID_(0),
+          connectionTick_(0)
       {
       }
 
-      NetowrkNewConnection::NetowrkNewConnection(int32 playerID)
+      NetowrkNewConnection::NetowrkNewConnection(int32 playerID,uint32 connectionTick)
           : type_(NETWORK_MESSAGE_SERVER_TICK)
-          , playerID_(playerID_)
+          , playerID_(playerID_),
+          connectionTick_(connectionTick)
       {
       }
 
@@ -59,7 +61,7 @@ namespace charlie {
       {
       }
 
-      NetworkMessageEntityState::NetworkMessageEntityState(uint32 id,const Vector2 &position)
+      NetworkMessageEntityState::NetworkMessageEntityState(int32 id,const Vector2 &position)
          : type_(NETWORK_MESSAGE_ENTITY_STATE)
          , position_(position),
           id_(id)
@@ -79,14 +81,16 @@ namespace charlie {
       NetworkMessageInputCommand::NetworkMessageInputCommand()
           : type_(NETWORK_MESSAGE_INPUT_COMMAND)
           , bits_(0),
-          tick_(0)
+          tick_(0),
+          offsetTick_(0)
       {
       }
 
-      NetworkMessageInputCommand::NetworkMessageInputCommand(uint8 bits,uint32 tick)
+      NetworkMessageInputCommand::NetworkMessageInputCommand(uint8 bits,uint32 tick,uint32 offsetTick)
          : type_(NETWORK_MESSAGE_INPUT_COMMAND)
          , bits_(bits),
-          tick_(tick)
+          tick_(tick),
+          offsetTick_(offsetTick)
       {
       }
 
