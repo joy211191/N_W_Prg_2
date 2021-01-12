@@ -30,29 +30,31 @@ namespace charlie {
          return serialize(writer);
       }
 
-      NetowrkNewConnection::NetowrkNewConnection()
-          : type_(NETWORK_NEW_CONNECTION)
-          , playerID_(0),
-          connectionTick_(0)
+#pragma region PLAYER_ID
+
+      NetworkPlayerSetupID::NetworkPlayerSetupID()
+          : type_(NETWORK_MESSAGE_PLAYERID)
+          , playerID_(0)
       {
       }
 
-      NetowrkNewConnection::NetowrkNewConnection(int32 playerID,uint32 connectionTick)
-          : type_(NETWORK_MESSAGE_SERVER_TICK)
-          , playerID_(playerID_),
-          connectionTick_(connectionTick)
+      NetworkPlayerSetupID::NetworkPlayerSetupID(int32 playerID)
+          : type_(NETWORK_MESSAGE_PLAYERID)
+          , playerID_(playerID)
       {
       }
 
-      bool NetowrkNewConnection::read(NetworkStreamReader& reader)
+      bool NetworkPlayerSetupID::read(NetworkStreamReader& reader)
       {
           return serialize(reader);
       }
 
-      bool NetowrkNewConnection::write(NetworkStreamWriter& writer)
+      bool NetworkPlayerSetupID::write(NetworkStreamWriter& writer)
       {
           return serialize(writer);
       }
+
+#pragma endregion
 
       NetworkMessageEntityState::NetworkMessageEntityState()
          : type_(NETWORK_MESSAGE_ENTITY_STATE),

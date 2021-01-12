@@ -11,12 +11,13 @@ namespace charlie {
       struct NetworkStreamWriter;
 
       enum NetworkMessageType {
-         NETWORK_MESSAGE_SERVER_TICK,
-         NETWORK_MESSAGE_ENTITY_STATE,
-         NETWORK_MESSAGE_INPUT_COMMAND,
-         NETWORK_MESSAGE_PLAYER_STATE,
-         NETWORK_MESSAGE_COUNT,
-         NETWORK_NEW_CONNECTION,
+          NETWORK_NEW_CONNECTION,
+          NETWORK_MESSAGE_SERVER_TICK,
+          NETWORK_MESSAGE_ENTITY_STATE,
+          NETWORK_MESSAGE_INPUT_COMMAND,
+          NETWORK_MESSAGE_PLAYER_STATE,
+          NETWORK_MESSAGE_COUNT,
+          NETWORK_MESSAGE_PLAYERID,
       };
 
       static_assert(NETWORK_MESSAGE_COUNT <= 255, "network message type cannot exceed 255!");
@@ -43,9 +44,9 @@ namespace charlie {
          uint32 server_tick_;
       };
 
-      struct NetowrkNewConnection {
-          NetowrkNewConnection();
-          explicit NetowrkNewConnection(const int32 playerId,uint32 connectionTick);
+      struct NetworkPlayerSetupID {
+          NetworkPlayerSetupID();
+          explicit NetworkPlayerSetupID(const int32 playerId);
 
           bool read(NetworkStreamReader& reader);
           bool write(NetworkStreamWriter& writer);
@@ -56,13 +57,11 @@ namespace charlie {
               bool result = true;
               result &= stream.serialize(type_);
               result &= stream.serialize(playerID_);
-              result &= stream.serialize(connectionTick_);
               return result;
           }
 
           uint8 type_;
           int32 playerID_;
-          uint32 connectionTick_;
       };
 
       struct NetworkMessageEntityState {

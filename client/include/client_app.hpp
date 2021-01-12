@@ -25,8 +25,10 @@ struct ClientApp final : Application, network::IConnectionListener {
    virtual bool on_init();
    virtual void on_exit();
    virtual bool on_tick(const Time &dt);
+   void GetInput();
+   void PlayerPosition();
    Vector2 GetInputDirection(uint8 input);
-   void EntityInterpolation(uint32 id, Vector2 newPosition);
+   void EntityInterpolation();
    virtual void on_draw();
 
    // note: IConnectionListener 
@@ -52,6 +54,8 @@ struct ClientApp final : Application, network::IConnectionListener {
    bool idApplied;
    int winnerID;
 
+   bool synced;
+
    network::UDPSocket socket;
    network::IPAddress serverIP;
    bool serverFound = false;
@@ -74,6 +78,20 @@ struct ClientApp final : Application, network::IConnectionListener {
 	   int32 inputMispredictions;
    };
    DataStruct networkData;
+
+   enum EventType {
+	   PLAYER_ID,
+	   PLAYER_DEATH,
+	   PLAYER_SHOOT,
+   };
+
+   struct Event {
+	   uint32 playerID;
+	   EventType event;
+	   uint16 sequenceNumber;
+   };
+
+   charlie::DynamicArray<Event> eventQueue;
 };
 
 #endif // !CLIENT_APP_HPP_INCLUDED

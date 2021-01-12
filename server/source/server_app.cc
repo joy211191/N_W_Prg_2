@@ -38,7 +38,6 @@ bool ServerApp::on_tick(const Time& dt)
         auto pl = players.begin();
         while (pl != players.end()) {
             tempInput = 0;
-            printf("List size: %d\n", (int)(*pl).inputLibrary.size());
             auto in = (*pl).inputLibrary.begin();
             while (in != (*pl).inputLibrary.end())
             {
@@ -107,10 +106,11 @@ void ServerApp::on_connect(network::Connection *connection)
    connection->set_listener(this);
    auto id = clients_.add_client((uint64)connection);
    newConnection = true;
-   newConnectionID = clients_.find_client((uint64)connection);
    gameplay::Player newPlayer;
-   newPlayer.playerID = newConnectionID;
+   printf("Connection id: %d\n", (int)id);
+   newPlayer.playerID = id;
    newPlayer.alive = true;
+   newPlayer.idAssigned = false;
    players.push_back(newPlayer);
 }
 
@@ -131,7 +131,16 @@ void ServerApp::on_disconnect(network::Connection *connection)
 
 void ServerApp::on_acknowledge(network::Connection *connection, const uint16 sequence)
 {
-
+    auto id = clients_.find_client((uint64)connection);
+    auto eve=players[id].eventQueue.begin();
+    while (eve != players[id].eventQueue.end()) {
+        if ((*eve).sequenceNumber == sequence) {
+            players[id].eventQueue.erase(eve);
+            players[id].idAssigned = true;
+            break;
+        }
+        ++eve;
+    }
 }
 
 void ServerApp::on_receive(network::Connection *connection, network::NetworkStreamReader &reader)
@@ -162,32 +171,36 @@ void ServerApp::on_receive(network::Connection *connection, network::NetworkStre
 void ServerApp::on_send(network::Connection* connection, const uint16 sequence, network::NetworkStreamWriter& writer)
 {
     auto id = clients_.find_client((uint64)connection);
+    if (!players[id].idAssigned) {
+        int32 playerID = (int32)id;
+        network::NetworkPlayerSetupID playerIDMessage(playerID);
+        if (!playerIDMessage.write(writer)) {
+            assert(!"failed to write message!");
+        }
+        gameplay::PlayerEvent newEvent;
+        newEvent.playerID = id;
+        newEvent.type = gameplay::PlayerEventTypes::PLAYER_ID;
+        newEvent.sequenceNumber = sequence;
+         players[id].eventQueue.push_back(newEvent);
+    }
     auto pl = players.begin();
     while (pl != players.end()) {
-        if (newConnection) {
-            network::NetowrkNewConnection message((*pl).playerID, serverTick);
-            if (!message.write(writer)) {
-                assert(!"failed to write message!");
-            }
-            newConnection = false;
-        }
         {
             network::NetworkMessageServerTick message(Time::now().as_ticks(), serverTick);
             if (!message.write(writer)) {
                 assert(!"failed to write message!");
             }
         }
-        //players_[id]. ..;
         if (id == (*pl).playerID)
         {
-            network::NetworkMessagePlayerState message(serverTick, (*pl).position_);
+            network::NetworkMessagePlayerState message((*pl).playerID , (*pl).position_);
             if (!message.write(writer)) {
                 assert(!"failed to write message!");
             }
         }
         else
         {
-            network::NetworkMessageEntityState message(serverTick, (*pl).position_);
+            network::NetworkMessageEntityState message((*pl).playerID, (*pl).position_);
             if (!message.write(writer)) {
                 assert(!"failed to write message!");
             }

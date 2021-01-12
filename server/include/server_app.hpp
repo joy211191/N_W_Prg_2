@@ -89,7 +89,6 @@ struct ServerApp final : Application, network::IServiceListener, network::IConne
 
    Vector2 direction;
    uint8 tempInput;
-
 };
 
 #endif // !SERVER_APP_HPP_INCLUDED
