@@ -2,7 +2,8 @@
 
 #ifndef CLIENT_APP_HPP_INCLUDED
 #define CLIENT_APP_HPP_INCLUDED
-constexpr float SPEED = 100;
+constexpr float PLAYER_SPEED = 100;
+constexpr float BULLET_SPEED = 150;
 
 #include <charlie_application.hpp>
 #include <charlie_protocol.hpp>
@@ -26,6 +27,7 @@ struct ClientApp final : Application, network::IConnectionListener {
    virtual bool on_init();
    virtual void on_exit();
    virtual bool on_tick(const Time &dt);
+   void Bullet();
    void GetInput();
    void PlayerPosition();
    Vector2 GetInputDirection(uint8 input);
@@ -50,7 +52,9 @@ struct ClientApp final : Application, network::IConnectionListener {
    uint32 currentServerTick;
    uint32 offsetTick;
    uint8 input_bits_;
-   gameplay::Player player_;
+   gameplay::Player player;
+   gameplay::Bullet playerBullet;
+   charlie::DynamicArray<gameplay::Bullet> otherBullets;
    charlie::DynamicArray<gameplay::Entity> otherPlayers;
    bool idApplied;
    int winnerID;

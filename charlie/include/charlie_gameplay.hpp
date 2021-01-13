@@ -12,7 +12,6 @@ namespace charlie {
             Vector2 position_;
             Vector2 newPosition;
             Color playerColor;
-            Vector2 positionList[10];
         };
 
         enum class Action {
@@ -39,11 +38,10 @@ namespace charlie {
         struct Bullet {
             bool active;
             Vector2 position_;
-            int32 bulletID;
-            uint32 lastTick;
-            charlie::DynamicArray<Inputinator> positionHistory;
-            Vector2 direction;
+            uint32 bulletID;
             Vector2 recievedPosition;
+            Color bulletColor;
+            Vector2 direction;
         };
 
         enum PlayerEventTypes {
@@ -62,7 +60,7 @@ namespace charlie {
             bool alive;
             Vector2 position_;
             Vector2 calculatedPosition;
-            int32 playerID;
+            uint32 playerID;
             Color playerColor;
             uint32 offsetTick;
             bool idAssigned;

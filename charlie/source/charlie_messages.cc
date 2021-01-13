@@ -8,7 +8,7 @@ namespace charlie {
 
        NetworkMessageShoot::NetworkMessageShoot() {}
 
-       NetworkMessageShoot::NetworkMessageShoot(const uint8  active, const uint32 server_tick, const int32 id, const Vector2 position, const Vector2 shootDirection)
+       NetworkMessageShoot::NetworkMessageShoot(const uint8  active, const uint32 server_tick, const uint32 id, const Vector2 position, const Vector2 shootDirection)
            :type_(NETWORK_MESSAGE_SHOOT),
            bulletActive(active),
            server_tick_(server_tick),

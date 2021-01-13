@@ -2,7 +2,7 @@
 
 #ifndef SERVER_APP_HPP_INCLUDED
 #define SERVER_APP_HPP_INCLUDED
-constexpr float SPEED = 100;
+constexpr float PLAYER_SPEED = 100;
 
 #include <charlie_application.hpp>
 
@@ -59,7 +59,7 @@ struct ServerApp final : Application, network::IServiceListener, network::IConne
    virtual bool on_init();
    virtual void on_exit();
    virtual bool on_tick(const Time &dt);
-   Vector2 GetInputDirection(uint8 input);
+   Vector2 GetInputDirection(uint8 input,uint32 playerID);
    virtual void on_draw();
 
    // note: IServiceListener

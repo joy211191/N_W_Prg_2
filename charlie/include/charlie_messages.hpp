@@ -25,7 +25,7 @@ namespace charlie {
 
       struct NetworkMessageShoot {
           NetworkMessageShoot();
-          explicit NetworkMessageShoot(const uint8  active, const uint32 server_tick, const int32 id, const Vector2 position, const Vector2 shootDirection);
+          explicit NetworkMessageShoot(const uint8 active, const uint32 server_tick, const uint32 id, const Vector2 position, const Vector2 shootDirection);
 
           bool read(NetworkStreamReader& reader);
           bool write(NetworkStreamWriter& writer);
@@ -47,7 +47,7 @@ namespace charlie {
           uint8 type_;
           uint8 bulletActive;
           uint32 server_tick_;
-          int32 playerID;
+          uint32 playerID;
           Vector2 bulletPosition;
           Vector2 direction;
       };

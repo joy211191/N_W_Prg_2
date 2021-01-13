@@ -18,8 +18,9 @@ ClientApp::ClientApp()
     clientTick(0),
     currentServerTick(0)
 {
-    player_.playerID = 999;
+    player.playerID = 999;
     synced = false;
+    playerBullet.active = false;
 }
 
 bool ClientApp::on_init()
@@ -30,7 +31,7 @@ bool ClientApp::on_init()
    }
 
    connection_.set_listener(this);
-   //connection_.connect(network::IPAddress(127, 0, 0, 1, 54345));
+   connection_.connect(network::IPAddress(127, 0, 0, 1, 54345));
 
    return true;
 }
@@ -44,8 +45,8 @@ bool ClientApp::on_tick(const Time &dt)
    if (keyboard_.pressed(Keyboard::Key::Escape)) {
       return false;
    }
-   if (!serverFound)
-       serverFound = ServerDiscovery();
+   /*if (!serverFound)
+       serverFound = ServerDiscovery();*/
    if (serverFound) {
        if (keyboard_.pressed(Keyboard::Key::Space) && (connection_.state_ == network::Connection::State::Invalid || connection_.is_disconnected())) {
            connection_.connect(serverIP);
@@ -61,9 +62,16 @@ bool ClientApp::on_tick(const Time &dt)
            EntityInterpolation();
            GetInput();
            PlayerPosition();
+           Bullet();
        }
    }
    return true;
+}
+
+void ClientApp::Bullet()
+{
+    if(playerBullet.active)
+        playerBullet.position_ += playerBullet.direction * BULLET_SPEED * tickrate_.as_seconds();
 }
 
 void ClientApp::GetInput()
@@ -92,13 +100,13 @@ void ClientApp::PlayerPosition()
         gameplay::Inputinator temp;
         temp.inputBits = input_bits_;
         temp.tick = clientTick;
-        temp.calculatedPosition = player_.position_ + GetInputDirection(input_bits_) * SPEED * tickrate_.as_seconds();
-        player_.inputLibrary.push_back(temp);
-        player_.position_ += GetInputDirection(input_bits_) * SPEED * tickrate_.as_seconds();
-        if (player_.inputLibrary.size() > offsetTick) {
-            auto inpt = player_.inputLibrary.begin();
+        temp.calculatedPosition = player.position_ + GetInputDirection(input_bits_) * PLAYER_SPEED * tickrate_.as_seconds();
+        player.inputLibrary.push_back(temp);
+        player.position_ += GetInputDirection(input_bits_) * PLAYER_SPEED * tickrate_.as_seconds();
+        if (player.inputLibrary.size() > offsetTick) {
+            auto inpt = player.inputLibrary.begin();
             inpt += offsetTick;
-            player_.inputLibrary.erase(player_.inputLibrary.begin(), inpt);
+            player.inputLibrary.erase(player.inputLibrary.begin(), inpt);
         }
     }
 }
@@ -107,7 +115,11 @@ void ClientApp::EntityInterpolation()
 {
     for (int32 i = 0; i < otherPlayers.size(); i++) {
         float distance = Vector2::distance(otherPlayers[i].newPosition, otherPlayers[i].position_);
-        otherPlayers[i].position_ = Vector2::lerp(otherPlayers[i].position_, otherPlayers[i].newPosition, SPEED * distance * tickrate_.as_milliseconds());
+        otherPlayers[i].position_ = Vector2::lerp(otherPlayers[i].position_, otherPlayers[i].newPosition, PLAYER_SPEED * distance * tickrate_.as_milliseconds());
+    }
+    for(int32 i=0;i<otherBullets.size();i++){
+        float distance = Vector2::distance(otherBullets[i].recievedPosition, otherBullets[i].position_);
+        otherBullets[i].position_ = Vector2::lerp(otherBullets[i].position_, otherBullets[i].recievedPosition, PLAYER_SPEED * distance * tickrate_.as_milliseconds());
     }
 }
 
@@ -133,8 +145,17 @@ Vector2 ClientApp::GetInputDirection(uint8 input)
     if (player_move_right) {
         inputDirection.x_ += 1.0f;
     }
-
     inputDirection.normalize();
+    printf("%d", playerBullet.active);
+    if (!playerBullet.active&&player_shoot) {
+        playerBullet.active = true;
+        Vector2 offset = Vector2(10,10);
+        playerBullet.position_ = player.position_+offset;
+        playerBullet.direction = inputDirection;
+    }
+    else {
+        playerBullet.position_ = player.position_;
+    }
     return inputDirection;
 }
 
@@ -153,8 +174,14 @@ void ClientApp::on_draw()
                renderer_.render_rectangle_fill({ int32((*en).position_.x_), int32((*en).position_.y_), 20, 20 },Color::White );//(*en).playerColor
                ++en;
            }
+           auto bl = otherBullets.begin();
+           while (bl != otherBullets.end()) {
+               renderer_.render_rectangle_fill({ int32((*bl).position_.x_), int32((*bl).position_.y_), 5, 5 }, Color::White);//(*en).playerColor
+               bl;
+           }
        }
-       renderer_.render_rectangle_fill({ int32(player_.position_.x_), int32(player_.position_.y_), 20, 20 }, player_.playerColor);
+       renderer_.render_rectangle_fill({ int32(player.position_.x_), int32(player.position_.y_), 20, 20 }, player.playerColor);
+       renderer_.render_rectangle_fill({ int32(playerBullet.position_.x_), int32(playerBullet.position_.y_), 5, 5 }, playerBullet.bulletColor);
    }
 }
 
@@ -168,17 +195,35 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
     while (reader.position() < reader.length()) {
         switch (reader.peek()) {
             case network::NETWORK_MESSAGE_PLAYERID: {
-                if (player_.playerID > 8) {
+                if (player.playerID > 8) {
                     network::NetworkPlayerSetupID message;
                     if(!message.read(reader))
                         assert(!"could not read message!");
-                    player_.playerID = message.playerID_;
-                    printf("My id=%d\n", (int)player_.playerID);
+                    player.playerID = message.playerID_;
                 }
                 break;
             }
             case network::NETWORK_MESSAGE_SHOOT: {
-                //Add bullets in the game
+                network::NetworkMessageShoot message;
+                if (!message.read(reader)) {
+                    assert(!"could not read message!");
+                }
+                if (message.playerID == player.playerID) {
+                    playerBullet.active = message.bulletActive;
+                    playerBullet.position_ = message.bulletPosition;
+                }
+                else {
+                    auto bullet = otherBullets.begin();
+                    while (bullet != otherBullets.end())
+                    {
+                        if ((*bullet).bulletID == message.playerID) {
+                            (*bullet).active =message.bulletActive;
+                            (*bullet).recievedPosition = message.bulletPosition;
+                            break;
+                        }
+                        ++bullet;
+                    }
+                }
                 break;
             }
             case network::NETWORK_MESSAGE_SERVER_TICK:
@@ -195,7 +240,7 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                 uint32 sendRate = (uint32)(Time(1.0 / 20.0).as_milliseconds());
                 offsetTick = offset + latency + sendRate;
                 Synchronize(currentServerTick);
-                printf("Offset tick: %d\n Server tick: %d\n Client tick: %d" ,(int)offsetTick,(int)currentServerTick,(int)clientTick);
+                //printf("Offset tick: %d\n Server tick: %d\n Client tick: %d" ,(int)offsetTick,(int)currentServerTick,(int)clientTick);
                 break;
             }
             case network::NETWORK_MESSAGE_ENTITY_STATE:
@@ -219,6 +264,12 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                     entity.id = message.id_;
                     entity.newPosition - message.position_;
                     otherPlayers.push_back(entity);
+                    gameplay::Bullet bullet;
+                    bullet.active = false;
+                    bullet.bulletID = message.id_;
+                    bullet.position_ = message.position_;
+                    bullet.bulletColor = entity.playerColor;
+                    otherBullets.push_back(bullet);
                 }
                 else
                     (*otherPlayer).newPosition = message.position_;
@@ -250,8 +301,8 @@ void ClientApp::Synchronize(uint32 serverTick)
 
 void ClientApp::CheckPlayerPosition(uint32 serverTick, Vector2 serverPosition)
 {
-    auto in = player_.inputLibrary.begin();
-    while (in != player_.inputLibrary.end()) {
+    auto in = player.inputLibrary.begin();
+    while (in != player.inputLibrary.end()) {
         if ((*in).tick==serverTick-offsetTick) {
             printf("Distance:%f\n", Vector2::distance(serverPosition, (*in).calculatedPosition));
             if (Vector2::distance(serverPosition, (*in).calculatedPosition) > 5) {
@@ -260,9 +311,9 @@ void ClientApp::CheckPlayerPosition(uint32 serverTick, Vector2 serverPosition)
                 break;
             }
             else {
-                player_.position_ = (*in).calculatedPosition;
+                player.position_ = (*in).calculatedPosition;
             }
-            player_.inputLibrary.erase(player_.inputLibrary.begin(), in);
+            player.inputLibrary.erase(player.inputLibrary.begin(), in);
         }
         ++in;
     }
@@ -270,18 +321,18 @@ void ClientApp::CheckPlayerPosition(uint32 serverTick, Vector2 serverPosition)
 
 void ClientApp::FixPlayerPositions(uint32 serverTick, Vector2 serverPosition)
 {
-    auto in = player_.inputLibrary.begin();
-    while (in != player_.inputLibrary.end()) {
+    auto in = player.inputLibrary.begin();
+    while (in != player.inputLibrary.end()) {
         if ((*in).tick == serverTick-offsetTick) {
             (*in).calculatedPosition = serverPosition;
             break;
         }
         if ((*in).tick < serverTick) {
-            player_.inputLibrary.erase(in);
+            player.inputLibrary.erase(in);
         }
         ++in;
     }
-    player_.position_ = serverPosition;
+    player.position_ = serverPosition;
 }
 
 void ClientApp::on_send(network::Connection *connection, const uint16 sequence, network::NetworkStreamWriter &writer)
@@ -289,6 +340,12 @@ void ClientApp::on_send(network::Connection *connection, const uint16 sequence, 
    network::NetworkMessageInputCommand command(input_bits_,clientTick,offsetTick);
    if (!command.write(writer)) {
       assert(!"could not write network command!");
+   }
+   if (playerBullet.active) {
+       network::NetworkMessageShoot shoot(playerBullet.active, currentServerTick, playerBullet.bulletID, player.position_, playerBullet.direction);
+       if (!shoot.write(writer)) {
+           assert(!"could not write network command!");
+       }
    }
 }
 
