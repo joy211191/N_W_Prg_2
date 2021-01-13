@@ -1,2 +1,4 @@
-﻿  server_app.cc
+﻿  main.cc
+  server_app.cc
+  Generating Code...
   server.vcxproj -> D:\Docs\Game Design Docs\charlie\N_W_Prg_2\build\server.debug.exe

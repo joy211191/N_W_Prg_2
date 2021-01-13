@@ -81,6 +81,9 @@ void ClientApp::GetInput()
     if (keyboard_.down(Keyboard::Key::D)) {
         input_bits_ |= (1 << int32(gameplay::Action::Right));
     }
+    if (keyboard_.down(Keyboard::Key::Space)) {
+        input_bits_ |= (1 << int32(gameplay::Action::Shoot));
+    }
 }
 
 void ClientApp::PlayerPosition()
@@ -114,6 +117,7 @@ Vector2 ClientApp::GetInputDirection(uint8 input)
     const bool player_move_down = input & (1 << int32(gameplay::Action::Down));
     const bool player_move_left = input & (1 << int32(gameplay::Action::Left));
     const bool player_move_right = input & (1 << int32(gameplay::Action::Right));
+    const bool player_shoot = input & (1 << int32(gameplay::Action::Shoot));
 
     Vector2 inputDirection = Vector2::Zero;
 
@@ -129,6 +133,7 @@ Vector2 ClientApp::GetInputDirection(uint8 input)
     if (player_move_right) {
         inputDirection.x_ += 1.0f;
     }
+
     inputDirection.normalize();
     return inputDirection;
 }
@@ -142,7 +147,6 @@ void ClientApp::on_draw()
        renderer_.render_text({ 3,12 }, Color::Red, 1, "Do you want to connect? ");
    }
    else  {
-       //printf("Other players list: %d\n", (int)otherPlayers.size());
        if (otherPlayers.size() > 0) {
            auto en = otherPlayers.begin();
            while (en != otherPlayers.end()) {
@@ -173,6 +177,10 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                 }
                 break;
             }
+            case network::NETWORK_MESSAGE_SHOOT: {
+                //Add bullets in the game
+                break;
+            }
             case network::NETWORK_MESSAGE_SERVER_TICK:
             {
                 network::NetworkMessageServerTick message;
@@ -187,14 +195,12 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                 uint32 sendRate = (uint32)(Time(1.0 / 20.0).as_milliseconds());
                 offsetTick = offset + latency + sendRate;
                 Synchronize(currentServerTick);
-                //printf("Offset tick: %d\n Server tick: %d\n Client tick: %d" ,(int)offsetTick,(int)currentServerTick,(int)clientTick);
-
+                printf("Offset tick: %d\n Server tick: %d\n Client tick: %d" ,(int)offsetTick,(int)currentServerTick,(int)clientTick);
                 break;
             }
             case network::NETWORK_MESSAGE_ENTITY_STATE:
             {
                 network::NetworkMessageEntityState message;
-                //printf("Data recieved for player with id: %d\n", (int)message.id_);
                 if (!message.read(reader)) {
                     assert(!"could not read message!");
                 }
@@ -213,7 +219,6 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                     entity.id = message.id_;
                     entity.newPosition - message.position_;
                     otherPlayers.push_back(entity);
-                    //printf("Other players list size: %d\n", (int)otherPlayers.size());
                 }
                 else
                     (*otherPlayer).newPosition = message.position_;
@@ -252,12 +257,12 @@ void ClientApp::CheckPlayerPosition(uint32 serverTick, Vector2 serverPosition)
             if (Vector2::distance(serverPosition, (*in).calculatedPosition) > 5) {
                 networkData.inputMispredictions++;
                 FixPlayerPositions(serverTick, serverPosition);
+                break;
             }
             else {
                 player_.position_ = (*in).calculatedPosition;
             }
             player_.inputLibrary.erase(player_.inputLibrary.begin(), in);
-            break;
         }
         ++in;
     }
@@ -272,12 +277,7 @@ void ClientApp::FixPlayerPositions(uint32 serverTick, Vector2 serverPosition)
             break;
         }
         if ((*in).tick < serverTick) {
-            Vector2 dir = GetInputDirection((*in).inputBits);
-            if (dir.length() > 0.0f) {
-                dir.normalize();
-                serverPosition += dir;
-            }
-            (*in).calculatedPosition = serverPosition;
+            player_.inputLibrary.erase(in);
         }
         ++in;
     }

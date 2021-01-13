@@ -18,9 +18,39 @@ namespace charlie {
           NETWORK_MESSAGE_PLAYER_STATE,
           NETWORK_MESSAGE_COUNT,
           NETWORK_MESSAGE_PLAYERID,
+          NETWORK_MESSAGE_SHOOT,
       };
 
       static_assert(NETWORK_MESSAGE_COUNT <= 255, "network message type cannot exceed 255!");
+
+      struct NetworkMessageShoot {
+          NetworkMessageShoot();
+          explicit NetworkMessageShoot(const uint8  active, const uint32 server_tick, const int32 id, const Vector2 position, const Vector2 shootDirection);
+
+          bool read(NetworkStreamReader& reader);
+          bool write(NetworkStreamWriter& writer);
+
+          template <typename Stream>
+          bool serialize(Stream& stream) {
+              bool result = true;
+              result &= stream.serialize(type_);
+              result &= stream.serialize(bulletActive);
+              result &= stream.serialize(server_tick_);
+              result &= stream.serialize(playerID);
+              result &= stream.serialize(bulletPosition.x_);
+              result &= stream.serialize(bulletPosition.y_);
+              result &= stream.serialize(direction.x_);
+              result &= stream.serialize(direction.y_);
+              return result;
+          }
+
+          uint8 type_;
+          uint8 bulletActive;
+          uint32 server_tick_;
+          int32 playerID;
+          Vector2 bulletPosition;
+          Vector2 direction;
+      };
 
       struct NetworkMessageServerTick {
          NetworkMessageServerTick();
@@ -66,7 +96,7 @@ namespace charlie {
 
       struct NetworkMessageEntityState {
          NetworkMessageEntityState();
-         explicit NetworkMessageEntityState(int32 id, const Vector2 &position);
+         explicit NetworkMessageEntityState(uint32 id, const Vector2 &position);
 
          bool read(NetworkStreamReader &reader);
          bool write(NetworkStreamWriter &writer);
@@ -81,7 +111,7 @@ namespace charlie {
             result &= stream.serialize(id_);
             return result;
          }
-         int32 id_;
+         uint32 id_;
          uint8 type_;
          Vector2 position_;
       };

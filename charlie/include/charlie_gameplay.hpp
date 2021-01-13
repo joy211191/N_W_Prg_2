@@ -8,10 +8,11 @@
 namespace charlie {
     namespace gameplay {
         struct Entity {
-            int32 id;
-            Vector2 newPosition;
+            uint32 id;
             Vector2 position_;
+            Vector2 newPosition;
             Color playerColor;
+            Vector2 positionList[10];
         };
 
         enum class Action {
@@ -33,6 +34,16 @@ namespace charlie {
             uint8 inputBits;
             uint32 tick;
             Vector2 calculatedPosition;
+        };
+
+        struct Bullet {
+            bool active;
+            Vector2 position_;
+            int32 bulletID;
+            uint32 lastTick;
+            charlie::DynamicArray<Inputinator> positionHistory;
+            Vector2 direction;
+            Vector2 recievedPosition;
         };
 
         enum PlayerEventTypes {
@@ -57,7 +68,9 @@ namespace charlie {
             bool idAssigned;
             charlie::DynamicArray<PlayerEvent> eventQueue;
             charlie::DynamicArray<Inputinator> inputLibrary;
+            
         };
+        
 
         struct ComponentBase {
             static uint32 next();

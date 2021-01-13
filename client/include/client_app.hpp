@@ -15,8 +15,9 @@ public:
 
 
 private:
-
 };
+
+
 
 struct ClientApp final : Application, network::IConnectionListener {
    ClientApp();
@@ -63,6 +64,7 @@ struct ClientApp final : Application, network::IConnectionListener {
    bool ConnectionCheck();
    struct DataStruct {
    public:
+	   Time currentServerTime;
 	   Time lastSent;
 	   Time LastRecieved;
 	   Time RTT;

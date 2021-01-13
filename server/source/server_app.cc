@@ -183,6 +183,14 @@ void ServerApp::on_send(network::Connection* connection, const uint16 sequence, 
         newEvent.sequenceNumber = sequence;
          players[id].eventQueue.push_back(newEvent);
     }
+    for (int i = 0; i < 4; i++) {
+        if (bullets[i].active) {
+            network::NetworkMessageShoot message(bullets[i].active, serverTick, i, bullets[i].position_, bullets[i].direction);
+            if (!message.write(writer)) {
+                assert(!"failed to write message!");
+            }
+        }
+    }
     auto pl = players.begin();
     while (pl != players.end()) {
         {

@@ -72,12 +72,14 @@ struct ServerApp final : Application, network::IServiceListener, network::IConne
    virtual void on_receive(network::Connection *connection, network::NetworkStreamReader &reader);
    virtual void on_send(network::Connection *connection, const uint16 sequence, network::NetworkStreamWriter &writer);
 
+
+
    const Time tickrate_;
    Time accumulator_;
    uint32 serverTick;
    ClientList clients_;
 
-   charlie::DynamicArray<gameplay::Entity>bullets_;
+   charlie::DynamicArray<gameplay::Bullet>bullets;
    Vector2 send_position_;
 
    Random random_;
