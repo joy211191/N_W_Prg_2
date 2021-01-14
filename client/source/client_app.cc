@@ -31,7 +31,7 @@ bool ClientApp::on_init()
    }
 
    connection_.set_listener(this);
-   connection_.connect(network::IPAddress(127, 0, 0, 1, 54345));
+   //connection_.connect(network::IPAddress(127, 0, 0, 1, 54345));
 
    return true;
 }
@@ -45,8 +45,8 @@ bool ClientApp::on_tick(const Time &dt)
    if (keyboard_.pressed(Keyboard::Key::Escape)) {
       return false;
    }
-   /*if (!serverFound)
-       serverFound = ServerDiscovery();*/
+   if (!serverFound)
+       serverFound = ServerDiscovery();
    if (serverFound) {
        if (keyboard_.pressed(Keyboard::Key::Space) && (connection_.state_ == network::Connection::State::Invalid || connection_.is_disconnected())) {
            connection_.connect(serverIP);
@@ -70,8 +70,14 @@ bool ClientApp::on_tick(const Time &dt)
 
 void ClientApp::Bullet()
 {
-    if(playerBullet.active)
-        playerBullet.position_ += playerBullet.direction * BULLET_SPEED * tickrate_.as_seconds();
+    //printf("Bullet direction X:%f Y:%f\n", playerBullet.direction.x_, playerBullet.direction.y_);
+    if (playerBullet.active) {
+        playerBullet.position_ += playerBullet.direction * 150 * tickrate_.as_seconds();
+        printf("Bullet moving\n");
+    }
+
+    if (playerBullet.position_.x_<0 || playerBullet.position_.x_>window_.width_ || playerBullet.position_.y_<0 || playerBullet.position_.y_>window_.height_)
+        playerBullet.active = false;
 }
 
 void ClientApp::GetInput()
@@ -146,7 +152,6 @@ Vector2 ClientApp::GetInputDirection(uint8 input)
         inputDirection.x_ += 1.0f;
     }
     inputDirection.normalize();
-    printf("%d", playerBullet.active);
     if (!playerBullet.active&&player_shoot) {
         playerBullet.active = true;
         Vector2 offset = Vector2(10,10);
@@ -304,7 +309,7 @@ void ClientApp::CheckPlayerPosition(uint32 serverTick, Vector2 serverPosition)
     auto in = player.inputLibrary.begin();
     while (in != player.inputLibrary.end()) {
         if ((*in).tick==serverTick-offsetTick) {
-            printf("Distance:%f\n", Vector2::distance(serverPosition, (*in).calculatedPosition));
+            //printf("Distance:%f\n", Vector2::distance(serverPosition, (*in).calculatedPosition));
             if (Vector2::distance(serverPosition, (*in).calculatedPosition) > 5) {
                 networkData.inputMispredictions++;
                 FixPlayerPositions(serverTick, serverPosition);

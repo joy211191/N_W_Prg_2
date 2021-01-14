@@ -106,7 +106,7 @@ void ServerApp::on_draw()
    }
    auto bl = bullets.begin();
    while (bl != bullets.end()) {
-       renderer_.render_rectangle_fill({ static_cast<int32>((*bl).position_.x_), static_cast<int32>((*bl).position_.y_),  20, 20 }, (*bl).bulletColor);
+       renderer_.render_rectangle_fill({ static_cast<int32>((*bl).position_.x_), static_cast<int32>((*bl).position_.y_),  10, 10 }, (*bl).bulletColor);
        ++bl;
    }
 }
@@ -168,7 +168,7 @@ void ServerApp::on_acknowledge(network::Connection *connection, const uint16 seq
 
 void ServerApp::on_receive(network::Connection *connection, network::NetworkStreamReader &reader)
 {
-   auto id = clients_.find_client((uint64)connection);
+   auto id = (uint32)clients_.find_client((uint64)connection);
    while (reader.position() < reader.length()) {
       if (reader.peek() != network::NETWORK_MESSAGE_INPUT_COMMAND) {
          break;
@@ -183,8 +183,20 @@ void ServerApp::on_receive(network::Connection *connection, network::NetworkStre
       temp.inputBits = command.bits_;
       temp.tick = command.tick_;
       for (int i = 0; i < players.size(); i++) {
-          if (i == id) {
+          if (i ==(int) id) {
               players[i].inputLibrary.push_back(temp);
+              break;
+          }
+      }
+      network::NetworkMessageShoot shoot;
+      if (!shoot.read(reader)) {
+          assert(!"could not read command!");
+      }
+      for (int i = 0; i < bullets.size(); i++) {
+          if (shoot.playerID == id) {
+              bullets[i].position_ = shoot.bulletPosition;
+              bullets[i].active = shoot.bulletActive;
+              bullets[i].direction = shoot.direction;
               break;
           }
       }
@@ -213,6 +225,7 @@ void ServerApp::on_send(network::Connection* connection, const uint16 sequence, 
         if (!message.write(writer)) {
             assert(!"failed to write message!");
         }
+        
         ++bl;
     }
     auto pl = players.begin();
