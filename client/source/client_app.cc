@@ -13,7 +13,7 @@ constexpr auto array_size(T(&)[N])
 ClientApp::ClientApp()
     : mouse_(window_.mouse_)
     , keyboard_(window_.keyboard_)
-    , tickrate_(1.0 / 60.0)
+    , tickrate_(1.0 / 20.0)
     , input_bits_(0),
     clientTick(0),
     currentServerTick(0)
@@ -159,35 +159,38 @@ Vector2 ClientApp::GetInputDirection(uint8 input)
         playerBullet.direction = inputDirection;
     }
     else {
-        playerBullet.position_ = player.position_;
+        playerBullet.position_= playerBullet.position_;
     }
+    inputDirection.normalize();
     return inputDirection;
 }
 
 void ClientApp::on_draw()
 {
-   renderer_.clear({ 0.2f, 0.3f, 0.4f, 1.0f });
-   renderer_.render_text({ 2, 2 }, Color::White, 1, "CLIENT");
-   if (serverFound&& (connection_.state_ == network::Connection::State::Invalid || connection_.is_disconnected())) {
-       renderer_.render_text_va({ 2,2 }, Color::Yellow, 1, "Server found at: %s", serverIP.as_string());
-       renderer_.render_text({ 3,12 }, Color::Red, 1, "Do you want to connect? ");
-   }
-   else  {
-       if (otherPlayers.size() > 0) {
-           auto en = otherPlayers.begin();
-           while (en != otherPlayers.end()) {
-               renderer_.render_rectangle_fill({ int32((*en).position_.x_), int32((*en).position_.y_), 20, 20 },Color::White );//(*en).playerColor
-               ++en;
-           }
-           auto bl = otherBullets.begin();
-           while (bl != otherBullets.end()) {
-               renderer_.render_rectangle_fill({ int32((*bl).position_.x_), int32((*bl).position_.y_), 5, 5 }, Color::White);//(*en).playerColor
-               bl;
-           }
-       }
-       renderer_.render_rectangle_fill({ int32(player.position_.x_), int32(player.position_.y_), 20, 20 }, player.playerColor);
-       renderer_.render_rectangle_fill({ int32(playerBullet.position_.x_), int32(playerBullet.position_.y_), 5, 5 }, playerBullet.bulletColor);
-   }
+    renderer_.clear({ 0.2f, 0.3f, 0.4f, 1.0f });
+    renderer_.render_text({ 2, 2 }, Color::White, 1, "CLIENT");
+    if (serverFound && (connection_.state_ == network::Connection::State::Invalid || connection_.is_disconnected())) {
+        renderer_.render_text_va({ 2,2 }, Color::Yellow, 1, "Server found at: %s", serverIP.as_string());
+        renderer_.render_text({ 3,12 }, Color::Red, 1, "Do you want to connect? ");
+    }
+    else {
+        if (otherPlayers.size() > 0) {
+            auto en = otherPlayers.begin();
+            while (en != otherPlayers.end()) {
+                renderer_.render_rectangle_fill({ int32((*en).position_.x_), int32((*en).position_.y_), 20, 20 }, Color::White);
+                ++en;
+            }
+            auto bl = otherBullets.begin();
+            while (bl != otherBullets.end()) {
+                if ((*bl).active)
+                    renderer_.render_rectangle_fill({ int32((*bl).position_.x_), int32((*bl).position_.y_), 10, 10 }, Color::White);
+                bl;
+            }
+        }
+        renderer_.render_rectangle_fill({ int32(player.position_.x_), int32(player.position_.y_), 20, 20 }, player.playerColor);
+        if (playerBullet.active)
+            renderer_.render_rectangle_fill({ int32(playerBullet.position_.x_), int32(playerBullet.position_.y_), 10, 10 }, playerBullet.bulletColor);
+    }
 }
 
 void ClientApp::on_acknowledge(network::Connection *connection, const uint16 sequence)
@@ -215,6 +218,7 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                 }
                 if (message.playerID == player.playerID) {
                     playerBullet.active = message.bulletActive;
+                    playerBullet.active = message.bulletActive;
                     playerBullet.position_ = message.bulletPosition;
                 }
                 else {
@@ -237,15 +241,14 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                 if (!message.read(reader)) {
                     assert(!"could not read message!");
                 }
-
-                const Time current = Time(message.server_time_);
-                currentServerTick = message.server_tick_;
-                uint32 offset = currentServerTick - clientTick;
-                uint32 latency = (uint32)((connection->latency().as_milliseconds() / tickrate_.as_milliseconds()) * 2);
-                uint32 sendRate = (uint32)(Time(1.0 / 20.0).as_milliseconds());
-                offsetTick = offset + latency + sendRate;
-                Synchronize(currentServerTick);
-                //printf("Offset tick: %d\n Server tick: %d\n Client tick: %d" ,(int)offsetTick,(int)currentServerTick,(int)clientTick);
+                if (clientTick <= message.server_tick_) {
+                    const Time current = Time(message.server_time_);
+                    currentServerTick = message.server_tick_;
+                    uint32 latency = (uint32)(connection_.latency().as_milliseconds() / tickrate_.as_milliseconds());
+                    uint32 offset =(uint32) (latency * 0.06f) + 1;
+                    offsetTick = offset + latency;
+                    Synchronize(currentServerTick);
+                }
                 break;
             }
             case network::NETWORK_MESSAGE_ENTITY_STATE:
@@ -300,7 +303,8 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
 
 void ClientApp::Synchronize(uint32 serverTick)
 {
-    clientTick = serverTick;
+    clientTick = serverTick+offsetTick;
+    lastSentTick = clientTick;
     synced = true;
 }
 
@@ -309,9 +313,9 @@ void ClientApp::CheckPlayerPosition(uint32 serverTick, Vector2 serverPosition)
     auto in = player.inputLibrary.begin();
     while (in != player.inputLibrary.end()) {
         if ((*in).tick==serverTick-offsetTick) {
-            //printf("Distance:%f\n", Vector2::distance(serverPosition, (*in).calculatedPosition));
             if (Vector2::distance(serverPosition, (*in).calculatedPosition) > 5) {
                 networkData.inputMispredictions++;
+                player.position_ = serverPosition;
                 FixPlayerPositions(serverTick, serverPosition);
                 break;
             }
@@ -328,7 +332,7 @@ void ClientApp::FixPlayerPositions(uint32 serverTick, Vector2 serverPosition)
 {
     auto in = player.inputLibrary.begin();
     while (in != player.inputLibrary.end()) {
-        if ((*in).tick == serverTick-offsetTick) {
+        if ((*in).tick == serverTick) {
             (*in).calculatedPosition = serverPosition;
             break;
         }
@@ -337,21 +341,19 @@ void ClientApp::FixPlayerPositions(uint32 serverTick, Vector2 serverPosition)
         }
         ++in;
     }
-    player.position_ = serverPosition;
 }
 
-void ClientApp::on_send(network::Connection *connection, const uint16 sequence, network::NetworkStreamWriter &writer)
+void ClientApp::on_send(network::Connection* connection, const uint16 sequence, network::NetworkStreamWriter& writer)
 {
-   network::NetworkMessageInputCommand command(input_bits_,clientTick,offsetTick);
-   if (!command.write(writer)) {
-      assert(!"could not write network command!");
-   }
-   if (playerBullet.active) {
-       network::NetworkMessageShoot shoot(playerBullet.active, currentServerTick, playerBullet.bulletID, player.position_, playerBullet.direction);
-       if (!shoot.write(writer)) {
-           assert(!"could not write network command!");
-       }
-   }
+
+    network::NetworkMessageInputCommand command(input_bits_, clientTick, offsetTick);
+    if (!command.write(writer)) {
+        assert(!"could not write network command!");
+    }
+    network::NetworkMessageShoot shoot(playerBullet.active, currentServerTick, playerBullet.bulletID, player.position_, playerBullet.direction);
+    if (!shoot.write(writer)) {
+        assert(!"could not write network command!");
+    }
 }
 
 bool ClientApp::ServerDiscovery() {

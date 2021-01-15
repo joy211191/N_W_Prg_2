@@ -60,6 +60,7 @@ struct ClientApp final : Application, network::IConnectionListener {
    int winnerID;
 
    bool synced;
+   uint32 lastSentTick;
 
    network::UDPSocket socket;
    network::IPAddress serverIP;

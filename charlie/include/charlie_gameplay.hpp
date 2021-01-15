@@ -57,6 +57,7 @@ namespace charlie {
         };
 
         struct Player {
+            bool shoot;
             bool alive;
             Vector2 position_;
             Vector2 calculatedPosition;

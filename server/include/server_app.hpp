@@ -60,6 +60,7 @@ struct ServerApp final : Application, network::IServiceListener, network::IConne
    virtual void on_exit();
    virtual bool on_tick(const Time &dt);
    Vector2 GetInputDirection(uint8 input,uint32 playerID);
+   void Bullet(const bool& player_shoot, const charlie::uint32& playerID);
    virtual void on_draw();
 
    // note: IServiceListener
