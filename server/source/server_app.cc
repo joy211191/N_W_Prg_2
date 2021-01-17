@@ -48,7 +48,6 @@ bool ServerApp::on_tick(const Time& dt)
                 }
                 ++in;
             }
-            Bullet((*pl).shoot, (*pl).playerID);
             (*pl).position_ += GetInputDirection(tempInput, (*pl).playerID) * PLAYER_SPEED * tickrate_.as_seconds();
             ++pl;
         }
@@ -80,23 +79,21 @@ Vector2 ServerApp::GetInputDirection(uint8 input, uint32 playerID)
     }
     players[playerID].shoot = player_shoot;
     inputDirection.normalize();
+    direction = inputDirection;
+    /*if(player_shoot)
+        Bullet(player_shoot, playerID);*/
     return inputDirection;
 }
 
 void ServerApp::Bullet(const bool& player_shoot, const charlie::uint32& playerID)
 {
-    if (player_shoot) {
-        if (!bullets[playerID].active) {
-            bullets[playerID].bulletID = playerID;
-            bullets[playerID].active = true;
-            Vector2 offsetPosition;
-            offsetPosition.x_ = 10;
-            offsetPosition.y_ = 10;
-            bullets[playerID].position_ = players[playerID].position_ + offsetPosition;
-            bullets[playerID].direction = direction;
-            bullets[playerID].direction.normalize();
-        }
-    }
+    bullets[playerID].active = true;
+    Vector2 offsetPosition;
+    offsetPosition.x_ = 10;
+    offsetPosition.y_ = 10;
+    bullets[playerID].position_ = players[playerID].position_ + offsetPosition;
+    bullets[playerID].direction = direction;
+    bullets[playerID].direction.normalize();
     if (bullets[playerID].active)
         bullets[playerID].position_ += bullets[playerID].direction * 150 * tickrate_.as_seconds();
     if (bullets[playerID].position_.x_<0 || bullets[playerID].position_.x_>window_.width_ || bullets[playerID].position_.y_<0 || bullets[playerID].position_.y_>window_.height_)
@@ -124,7 +121,7 @@ void ServerApp::on_timeout(network::Connection *connection)
 {
    connection->set_listener(nullptr);
    auto id = clients_.find_client((uint64)connection);
-   // ...
+
    clients_.remove_client((uint64)connection);
 }
 
@@ -183,12 +180,11 @@ void ServerApp::on_receive(network::Connection *connection, network::NetworkStre
       if (reader.peek() != network::NETWORK_MESSAGE_INPUT_COMMAND) {
          break;
       }
-
       network::NetworkMessageInputCommand command;
       if (!command.read(reader)) {
          assert(!"could not read command!");
       }
-      printf("Server Tick: %d, Command tick: %d\n", serverTick, command.tick_);
+
       players[id].offsetTick = command.offsetTick_;
       gameplay::Inputinator temp;
       temp.inputBits = command.bits_;
@@ -207,7 +203,8 @@ void ServerApp::on_receive(network::Connection *connection, network::NetworkStre
           if (shoot.playerID == id) {
               bullets[i].position_ = shoot.bulletPosition;
               bullets[i].active = shoot.bulletActive;
-              bullets[i].direction = shoot.direction;
+              /*if(!bullets[i].active)
+                bullets[i].direction = shoot.direction;*/
               break;
           }
       }
@@ -227,7 +224,7 @@ void ServerApp::on_send(network::Connection* connection, const uint16 sequence, 
         newEvent.playerID = id;
         newEvent.type = gameplay::PlayerEventTypes::PLAYER_ID;
         newEvent.sequenceNumber = sequence;
-         players[id].eventQueue.push_back(newEvent);
+        players[id].eventQueue.push_back(newEvent);
     }
     auto bl = bullets.begin();
     while (bl != bullets.end())
@@ -249,7 +246,7 @@ void ServerApp::on_send(network::Connection* connection, const uint16 sequence, 
         }
         if (id == (*pl).playerID)
         {
-            network::NetworkMessagePlayerState message((*pl).playerID , (*pl).position_);
+            network::NetworkMessagePlayerState message(serverTick, (*pl).position_);
             if (!message.write(writer)) {
                 assert(!"failed to write message!");
             }

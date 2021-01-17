@@ -31,6 +31,7 @@ struct ClientApp final : Application, network::IConnectionListener {
    void GetInput();
    void PlayerPosition();
    Vector2 GetInputDirection(uint8 input);
+   void Bullet(const bool& player_shoot, const charlie::Vector2& inputDirection);
    void EntityInterpolation();
    virtual void on_draw();
 

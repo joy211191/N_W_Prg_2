@@ -58,7 +58,7 @@ bool ClientApp::on_tick(const Time &dt)
        while (accumulator_ >= tickrate_) {
            accumulator_ -= tickrate_;
            clientTick++;
-           //printf("Client tick: %d,Server tick: %d,Offset tick: %d\n", (int)clientTick,(int)currentServerTick,(int)offsetTick);
+           printf("Client tick: %d,Server tick: %d,Offset tick: %d\n", (int)clientTick,(int)currentServerTick,(int)offsetTick);
            EntityInterpolation();
            GetInput();
            PlayerPosition();
@@ -73,7 +73,7 @@ void ClientApp::Bullet()
     //printf("Bullet direction X:%f Y:%f\n", playerBullet.direction.x_, playerBullet.direction.y_);
     if (playerBullet.active) {
         playerBullet.position_ += playerBullet.direction * 150 * tickrate_.as_seconds();
-        printf("Bullet moving\n");
+        //printf("Bullet moving\n");
     }
 
     if (playerBullet.position_.x_<0 || playerBullet.position_.x_>window_.width_ || playerBullet.position_.y_<0 || playerBullet.position_.y_>window_.height_)
@@ -109,11 +109,11 @@ void ClientApp::PlayerPosition()
         temp.calculatedPosition = player.position_ + GetInputDirection(input_bits_) * PLAYER_SPEED * tickrate_.as_seconds();
         player.inputLibrary.push_back(temp);
         player.position_ += GetInputDirection(input_bits_) * PLAYER_SPEED * tickrate_.as_seconds();
-        if (player.inputLibrary.size() > offsetTick) {
+        /*if (player.inputLibrary.size() > offsetTick*2) {
             auto inpt = player.inputLibrary.begin();
             inpt += offsetTick;
             player.inputLibrary.erase(player.inputLibrary.begin(), inpt);
-        }
+        }*/
     }
 }
 
@@ -152,17 +152,23 @@ Vector2 ClientApp::GetInputDirection(uint8 input)
         inputDirection.x_ += 1.0f;
     }
     inputDirection.normalize();
-    if (!playerBullet.active&&player_shoot) {
-        playerBullet.active = true;
-        Vector2 offset = Vector2(10,10);
-        playerBullet.position_ = player.position_+offset;
-        playerBullet.direction = inputDirection;
-    }
-    else {
-        playerBullet.position_= playerBullet.position_;
-    }
-    inputDirection.normalize();
+    Bullet(player_shoot, inputDirection);
     return inputDirection;
+}
+
+void ClientApp::Bullet(const bool& player_shoot, const charlie::Vector2& inputDirection)
+{
+    if (inputDirection.length() > 0) {
+        if (!playerBullet.active && player_shoot) {
+            playerBullet.active = true;
+            Vector2 offset = Vector2(10, 10);
+            playerBullet.position_ = player.position_ + offset;
+            playerBullet.direction = inputDirection;
+        }
+        else {
+            playerBullet.position_ = playerBullet.position_;
+        }
+    }
 }
 
 void ClientApp::on_draw()
@@ -208,6 +214,7 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                     if(!message.read(reader))
                         assert(!"could not read message!");
                     player.playerID = message.playerID_;
+                    playerBullet.bulletID = message.playerID_;
                 }
                 break;
             }
@@ -217,9 +224,10 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                     assert(!"could not read message!");
                 }
                 if (message.playerID == player.playerID) {
+                    break;
+                    /*playerBullet.active = message.bulletActive;
                     playerBullet.active = message.bulletActive;
-                    playerBullet.active = message.bulletActive;
-                    playerBullet.position_ = message.bulletPosition;
+                    playerBullet.position_ = message.bulletPosition;*/
                 }
                 else {
                     auto bullet = otherBullets.begin();
@@ -241,14 +249,11 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                 if (!message.read(reader)) {
                     assert(!"could not read message!");
                 }
-                if (clientTick <= message.server_tick_) {
-                    const Time current = Time(message.server_time_);
-                    currentServerTick = message.server_tick_;
-                    uint32 latency = (uint32)(connection_.latency().as_milliseconds() / tickrate_.as_milliseconds());
-                    uint32 offset =(uint32) (latency * 0.06f) + 1;
-                    offsetTick = offset + latency;
-                    Synchronize(currentServerTick);
-                }
+                const Time current = Time(message.server_time_);
+                currentServerTick = message.server_tick_;
+                uint32 latency = (uint32)(connection_.latency().as_milliseconds() / tickrate_.as_milliseconds());
+                offsetTick = (uint32)(latency * 0.06f) + 5;
+                Synchronize(currentServerTick);
                 break;
             }
             case network::NETWORK_MESSAGE_ENTITY_STATE:
@@ -312,10 +317,9 @@ void ClientApp::CheckPlayerPosition(uint32 serverTick, Vector2 serverPosition)
 {
     auto in = player.inputLibrary.begin();
     while (in != player.inputLibrary.end()) {
-        if ((*in).tick==serverTick-offsetTick) {
-            if (Vector2::distance(serverPosition, (*in).calculatedPosition) > 5) {
+        if ((*in).tick==serverTick) {
+            if (Vector2::distance(serverPosition, (*in).calculatedPosition) > 1) {
                 networkData.inputMispredictions++;
-                player.position_ = serverPosition;
                 FixPlayerPositions(serverTick, serverPosition);
                 break;
             }
@@ -341,16 +345,16 @@ void ClientApp::FixPlayerPositions(uint32 serverTick, Vector2 serverPosition)
         }
         ++in;
     }
+    player.position_ = serverPosition;
 }
 
 void ClientApp::on_send(network::Connection* connection, const uint16 sequence, network::NetworkStreamWriter& writer)
 {
-
     network::NetworkMessageInputCommand command(input_bits_, clientTick, offsetTick);
     if (!command.write(writer)) {
         assert(!"could not write network command!");
     }
-    network::NetworkMessageShoot shoot(playerBullet.active, currentServerTick, playerBullet.bulletID, player.position_, playerBullet.direction);
+    network::NetworkMessageShoot shoot(playerBullet.active, currentServerTick, playerBullet.bulletID, playerBullet.position_, playerBullet.direction);
     if (!shoot.write(writer)) {
         assert(!"could not write network command!");
     }
