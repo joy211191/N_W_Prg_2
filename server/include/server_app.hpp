@@ -62,6 +62,7 @@ struct ServerApp final : Application, network::IServiceListener, network::IConne
    Vector2 GetInputDirection(uint8 input,uint32 playerID);
    void Bullet(const bool& player_shoot, const charlie::uint32& playerID);
    virtual void on_draw();
+   bool CollisionCheck(Vector2 positionA, Vector2 positionB);
 
    // note: IServiceListener
    virtual void on_timeout(network::Connection *connection);

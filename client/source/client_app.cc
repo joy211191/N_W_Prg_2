@@ -325,8 +325,10 @@ void ClientApp::CheckPlayerPosition(uint32 serverTick, Vector2 serverPosition)
             }
             else {
                 player.position_ = (*in).calculatedPosition;
+                player.inputLibrary.erase(player.inputLibrary.begin(), in);
+                break;
             }
-            player.inputLibrary.erase(player.inputLibrary.begin(), in);
+            break;
         }
         ++in;
     }
@@ -340,10 +342,10 @@ void ClientApp::FixPlayerPositions(uint32 serverTick, Vector2 serverPosition)
             (*in).calculatedPosition = serverPosition;
             break;
         }
-        if ((*in).tick < serverTick) {
-            player.inputLibrary.erase(in);
-        }
         ++in;
+    }
+    if ((*in).tick < serverTick) {
+        player.inputLibrary.erase(in);
     }
     player.position_ = serverPosition;
 }

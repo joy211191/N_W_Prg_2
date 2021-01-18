@@ -98,6 +98,12 @@ void ServerApp::Bullet(const bool& player_shoot, const charlie::uint32& playerID
         bullets[playerID].position_ += bullets[playerID].direction * 150 * tickrate_.as_seconds();
     if (bullets[playerID].position_.x_<0 || bullets[playerID].position_.x_>window_.width_ || bullets[playerID].position_.y_<0 || bullets[playerID].position_.y_>window_.height_)
         bullets[playerID].active = false;
+    for (auto& pl : players) {
+        if (pl.playerID != bullets[playerID].bulletID && CollisionCheck(bullets[playerID].position_, pl.position_)) {
+            pl.alive = false;
+            break;
+        }
+    }
 }
 
 void ServerApp::on_draw()
@@ -115,6 +121,13 @@ void ServerApp::on_draw()
             renderer_.render_rectangle_fill({ static_cast<int32>((*bl).position_.x_), static_cast<int32>((*bl).position_.y_),  10, 10 }, (*bl).bulletColor);
         ++bl;
     }
+}
+
+bool ServerApp::CollisionCheck(Vector2 positionA, Vector2 positionB) {
+    if (positionA.x_<positionB.x_ + 20 && positionA.x_ + 20 >positionB.x_ && positionA.y_<positionB.y_ + 20 && positionA.y_ + 20>positionB.y_)
+        return true;
+    else
+        return false;
 }
 
 void ServerApp::on_timeout(network::Connection *connection)
