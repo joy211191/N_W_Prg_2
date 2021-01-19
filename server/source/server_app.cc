@@ -237,6 +237,7 @@ void ServerApp::on_send(network::Connection* connection, const uint16 sequence, 
         newEvent.playerID = id;
         newEvent.type = gameplay::PlayerEventTypes::PLAYER_ID;
         newEvent.sequenceNumber = sequence;
+        players[id].idAssigned = true;
         players[id].eventQueue.push_back(newEvent);
     }
     auto bl = bullets.begin();
