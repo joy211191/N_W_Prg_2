@@ -8,6 +8,7 @@
 namespace charlie {
     namespace gameplay {
         struct Entity {
+            bool alive;
             uint32 id;
             Vector2 position_;
             Vector2 newPosition;

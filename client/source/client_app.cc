@@ -201,7 +201,15 @@ void ClientApp::on_draw()
 
 void ClientApp::on_acknowledge(network::Connection *connection, const uint16 sequence)
 {
-
+    auto eve = player.eventQueue.begin();
+    while (eve!=player.eventQueue.end())
+    {
+        if ((*eve).sequenceNumber == sequence) {
+            player.eventQueue.erase(eve);
+            break;
+        }
+        ++eve;
+    }
 }
 
 void ClientApp::on_receive(network::Connection* connection, network::NetworkStreamReader& reader)
@@ -284,8 +292,10 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                     bullet.bulletColor = entity.playerColor;
                     otherBullets.push_back(bullet);
                 }
-                else
+                else {
                     (*otherPlayer).newPosition = message.position_;
+                    (*otherPlayer).alive = message.alive_;
+                }
                 break;
             }
             case network::NETWORK_MESSAGE_PLAYER_STATE:
@@ -294,7 +304,9 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                 if (!message.read(reader)) {
                     assert(!"could not read message!");
                 }
-                CheckPlayerPosition(message.tick_, message.position_);
+                player.alive = message.alive_;
+                if(player.alive)
+                    CheckPlayerPosition(message.tick_, message.position_);
                 break;
             }
             default:
@@ -359,6 +371,11 @@ void ClientApp::on_send(network::Connection* connection, const uint16 sequence, 
     network::NetworkMessageShoot shoot(playerBullet.active, currentServerTick, playerBullet.bulletID, playerBullet.position_, playerBullet.direction);
     if (!shoot.write(writer)) {
         assert(!"could not write network command!");
+    }
+    if (playerBullet.active) {
+        gameplay::PlayerEvent newEvent;
+        newEvent.sequenceNumber = sequence;
+        newEvent.type = gameplay::PlayerEventTypes::PLAYER_SHOOT;
     }
 }
 

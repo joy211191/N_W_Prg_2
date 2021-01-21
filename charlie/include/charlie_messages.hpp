@@ -96,7 +96,7 @@ namespace charlie {
 
       struct NetworkMessageEntityState {
          NetworkMessageEntityState();
-         explicit NetworkMessageEntityState(uint32 id, const Vector2 &position);
+         explicit NetworkMessageEntityState(uint32 id, const Vector2 &position,uint8 alive);
 
          bool read(NetworkStreamReader &reader);
          bool write(NetworkStreamWriter &writer);
@@ -109,11 +109,13 @@ namespace charlie {
             result &= stream.serialize(position_.x_);
             result &= stream.serialize(position_.y_);
             result &= stream.serialize(id_);
+            result &= stream.serialize(alive_);
             return result;
          }
          uint32 id_;
          uint8 type_;
          Vector2 position_;
+         uint8 alive_;
       };
 
       struct NetworkMessageInputCommand {
@@ -142,7 +144,7 @@ namespace charlie {
 
       struct NetworkMessagePlayerState {
          NetworkMessagePlayerState();
-         explicit NetworkMessagePlayerState(uint32 tick, const Vector2 &position);
+         explicit NetworkMessagePlayerState(uint32 tick, const Vector2 &position,uint8 alive);
 
          bool read(NetworkStreamReader &reader);
          bool write(NetworkStreamWriter &writer);
@@ -155,12 +157,14 @@ namespace charlie {
             result &= stream.serialize(position_.x_);
             result &= stream.serialize(position_.y_);
             result &= stream.serialize(tick_);
+            result &= stream.serialize(alive_);
             return result;
          }
 
          uint8 type_;
          Vector2 position_;
          uint32 tick_;
+         uint8 alive_;
       };
    } // !network
 } // !charlie

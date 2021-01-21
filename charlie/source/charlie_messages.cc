@@ -85,10 +85,11 @@ namespace charlie {
       {
       }
 
-      NetworkMessageEntityState::NetworkMessageEntityState(uint32 id,const Vector2 &position)
+      NetworkMessageEntityState::NetworkMessageEntityState(uint32 id,const Vector2 &position,uint8 alive)
          : type_(NETWORK_MESSAGE_ENTITY_STATE)
          , position_(position),
-          id_(id)
+          id_(id),
+          alive_(alive)
       {
       }
 
@@ -133,10 +134,11 @@ namespace charlie {
       {
       }
 
-      NetworkMessagePlayerState::NetworkMessagePlayerState(uint32 tick, const Vector2& position)
+      NetworkMessagePlayerState::NetworkMessagePlayerState(uint32 tick, const Vector2& position, uint8 alive)
           : type_(NETWORK_MESSAGE_PLAYER_STATE)
           , position_(position),
-          tick_(tick)
+          tick_(tick),
+          alive_(alive)
       {
       }
 

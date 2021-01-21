@@ -51,6 +51,12 @@ bool ServerApp::on_tick(const Time& dt)
             (*pl).position_ += GetInputDirection(tempInput, (*pl).playerID) * PLAYER_SPEED * tickrate_.as_seconds();
             ++pl;
         }
+        auto bl = bullets.begin();
+        while (bl != bullets.end())
+        {
+            Bullet((*bl).bulletID);
+            ++bl;
+        }
     }
     return true;
 }
@@ -80,30 +86,31 @@ Vector2 ServerApp::GetInputDirection(uint8 input, uint32 playerID)
     players[playerID].shoot = player_shoot;
     inputDirection.normalize();
     direction = inputDirection;
-    /*if(player_shoot)
-        Bullet(player_shoot, playerID);*/
+    if (player_shoot) {
+        bullets[playerID].direction = direction;
+        bullets[playerID].position_ = players[playerID].position_;
+        bullets[playerID].active = true;
+    }
     return inputDirection;
 }
 
-void ServerApp::Bullet(const bool& player_shoot, const charlie::uint32& playerID)
+void ServerApp::Bullet(const charlie::uint32& playerID)
 {
-    bullets[playerID].active = true;
-    Vector2 offsetPosition;
-    offsetPosition.x_ = 10;
-    offsetPosition.y_ = 10;
-    bullets[playerID].position_ = players[playerID].position_ + offsetPosition;
-    bullets[playerID].direction = direction;
-    bullets[playerID].direction.normalize();
-    if (bullets[playerID].active)
-        bullets[playerID].position_ += bullets[playerID].direction * 150 * tickrate_.as_seconds();
+    bullets[playerID].position_ += bullets[playerID].direction * 150 * tickrate_.as_seconds();
+    auto pl = players.begin();
+    while (pl != players.end())
+    {
+        if ((*pl).playerID != bullets[playerID].bulletID) {
+            if (CollisionCheck(bullets[playerID].position_, (*pl).position_)) {
+                (*pl).alive = false;
+                bullets[playerID].active = false;
+                break;
+            }
+        }
+        ++pl;
+    }
     if (bullets[playerID].position_.x_<0 || bullets[playerID].position_.x_>window_.width_ || bullets[playerID].position_.y_<0 || bullets[playerID].position_.y_>window_.height_)
         bullets[playerID].active = false;
-    for (auto& pl : players) {
-        if (pl.playerID != bullets[playerID].bulletID && CollisionCheck(bullets[playerID].position_, pl.position_)) {
-            pl.alive = false;
-            break;
-        }
-    }
 }
 
 void ServerApp::on_draw()
@@ -169,6 +176,7 @@ void ServerApp::on_disconnect(network::Connection *connection)
            players.erase(pl);
            break;
        }
+       ++pl;
    }
 }
 
@@ -212,12 +220,12 @@ void ServerApp::on_receive(network::Connection *connection, network::NetworkStre
       if (!shoot.read(reader)) {
          assert(!"could not read command!");
       }
+      printf("%d", (int)shoot.bulletActive);
       for (int i = 0; i < bullets.size(); i++) {
           if (shoot.playerID == id) {
               bullets[i].position_ = shoot.bulletPosition;
               bullets[i].active = shoot.bulletActive;
-              /*if(!bullets[i].active)
-                bullets[i].direction = shoot.direction;*/
+              bullets[i].direction = shoot.direction;
               break;
           }
       }
@@ -260,14 +268,14 @@ void ServerApp::on_send(network::Connection* connection, const uint16 sequence, 
         }
         if (id == (*pl).playerID)
         {
-            network::NetworkMessagePlayerState message(serverTick, (*pl).position_);
+            network::NetworkMessagePlayerState message(serverTick, (*pl).position_,(*pl).alive);
             if (!message.write(writer)) {
                 assert(!"failed to write message!");
             }
         }
         else
         {
-            network::NetworkMessageEntityState message((*pl).playerID, (*pl).position_);
+            network::NetworkMessageEntityState message((*pl).playerID, (*pl).position_,(*pl).alive);
             if (!message.write(writer)) {
                 assert(!"failed to write message!");
             }
