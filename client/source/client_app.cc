@@ -31,7 +31,7 @@ bool ClientApp::on_init()
    }
 
    connection_.set_listener(this);
-   connection_.connect(network::IPAddress(127, 0, 0, 1, 54345));
+   //connection_.connect(network::IPAddress(127, 0, 0, 1, 54345));
 
    return true;
 }
@@ -47,11 +47,11 @@ bool ClientApp::on_tick(const Time &dt)
    }
    if (!serverFound)
        serverFound = ServerDiscovery();
-   /*if (serverFound) {
+   if (serverFound) {
        if (keyboard_.pressed(Keyboard::Key::Space) && (connection_.state_ == network::Connection::State::Invalid || connection_.is_disconnected())) {
            connection_.connect(serverIP);
        }
-   }*/
+   }
 
    if (connection_.is_connected()) {
        accumulator_ += dt;
