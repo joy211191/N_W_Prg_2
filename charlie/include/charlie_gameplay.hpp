@@ -7,14 +7,6 @@
 
 namespace charlie {
     namespace gameplay {
-        struct Entity {
-            bool alive;
-            uint32 id;
-            Vector2 position_;
-            Vector2 newPosition;
-            Color playerColor;
-            charlie::DynamicArray<Inputinator> positionBuffer;
-        };
 
         enum class Action {
             Up,
@@ -44,6 +36,15 @@ namespace charlie {
             Vector2 recievedPosition;
             Color bulletColor;
             Vector2 direction;
+            charlie::DynamicArray<Inputinator> positionBuffer;
+        };
+
+        struct Entity {
+            bool alive;
+            uint32 id;
+            Vector2 position_;
+            Vector2 newPosition;
+            Color entityColor;
             charlie::DynamicArray<Inputinator> positionBuffer;
         };
 

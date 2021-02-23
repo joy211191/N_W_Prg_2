@@ -110,7 +110,7 @@ namespace charlie {
             result &= stream.serialize(position_.y_);
             result &= stream.serialize(id_);
             result &= stream.serialize(alive_);
-            result &=steam.serialize(tick_)
+            result &= stream.serialize(tick_);
             return result;
          }
          uint32 tick_;

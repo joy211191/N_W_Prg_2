@@ -275,7 +275,7 @@ void ServerApp::on_send(network::Connection* connection, const uint16 sequence, 
         }
         else
         {
-            network::NetworkMessageEntityState message((*pl).playerID, (*pl).position_,(*pl).alive);
+            network::NetworkMessageEntityState message((*pl).playerID, (*pl).position_,(*pl).alive,serverTick);
             if (!message.write(writer)) {
                 assert(!"failed to write message!");
             }

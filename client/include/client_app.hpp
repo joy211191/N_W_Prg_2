@@ -33,6 +33,8 @@ struct ClientApp final : Application, network::IConnectionListener {
    Vector2 GetInputDirection(uint8 input);
    void Bullet(const bool& player_shoot, const charlie::Vector2& inputDirection);
    void EntityInterpolation();
+   void ClearBuffer(DynamicArray<gameplay::Bullet> entityList);
+   void ClearBuffer(DynamicArray<gameplay::Entity> entityList);
    virtual void on_draw();
 
    // note: IConnectionListener 
