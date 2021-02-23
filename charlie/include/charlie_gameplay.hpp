@@ -13,6 +13,7 @@ namespace charlie {
             Vector2 position_;
             Vector2 newPosition;
             Color playerColor;
+            charlie::DynamicArray<Inputinator> positionBuffer;
         };
 
         enum class Action {
@@ -43,6 +44,7 @@ namespace charlie {
             Vector2 recievedPosition;
             Color bulletColor;
             Vector2 direction;
+            charlie::DynamicArray<Inputinator> positionBuffer;
         };
 
         enum PlayerEventTypes {

@@ -96,7 +96,7 @@ namespace charlie {
 
       struct NetworkMessageEntityState {
          NetworkMessageEntityState();
-         explicit NetworkMessageEntityState(uint32 id, const Vector2 &position,uint8 alive);
+         explicit NetworkMessageEntityState(uint32 id, const Vector2 &position,uint8 alive, uint32 tick);
 
          bool read(NetworkStreamReader &reader);
          bool write(NetworkStreamWriter &writer);
@@ -110,8 +110,10 @@ namespace charlie {
             result &= stream.serialize(position_.y_);
             result &= stream.serialize(id_);
             result &= stream.serialize(alive_);
+            result &=steam.serialize(tick_)
             return result;
          }
+         uint32 tick_;
          uint32 id_;
          uint8 type_;
          Vector2 position_;

@@ -85,11 +85,12 @@ namespace charlie {
       {
       }
 
-      NetworkMessageEntityState::NetworkMessageEntityState(uint32 id,const Vector2 &position,uint8 alive)
+      NetworkMessageEntityState::NetworkMessageEntityState(uint32 id,const Vector2 &position,uint8 alive, uint32 tick)
          : type_(NETWORK_MESSAGE_ENTITY_STATE)
          , position_(position),
           id_(id),
-          alive_(alive)
+          alive_(alive),
+          tick_(tick)
       {
       }
 

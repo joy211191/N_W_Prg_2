@@ -59,9 +59,9 @@ bool ClientApp::on_tick(const Time &dt)
            accumulator_ -= tickrate_;
            clientTick++;
            printf("Client tick: %d,Server tick: %d,Offset tick: %d\n", (int)clientTick,(int)currentServerTick,(int)offsetTick);
-           EntityInterpolation();
            GetInput();
            PlayerPosition();
+           EntityInterpolation();
            Bullet();
        }
    }
@@ -120,12 +120,34 @@ void ClientApp::PlayerPosition()
 void ClientApp::EntityInterpolation()
 {
     for (int32 i = 0; i < otherPlayers.size(); i++) {
-        float distance = Vector2::distance(otherPlayers[i].newPosition, otherPlayers[i].position_);
-        otherPlayers[i].position_ = Vector2::lerp(otherPlayers[i].position_, otherPlayers[i].newPosition, PLAYER_SPEED * distance * tickrate_.as_milliseconds());
+        int endIndex;
+        auto currentPlayer = otherPlayers[i];
+        for (int j = 0; j < otherPlayers[i].positionBuffer.size();j++) {
+            if (currentPlayer.positionBuffer[j].tick > clientTick) {
+                endIndex = j;
+                break;
+            }
+        }
+        int startIndex = endIndex - 1;
+        float total = float(currentPlayer.positionBuffer[endIndex].tick - currentPlayer.positionBuffer[startIndex].tick);
+        float current = (float)(clientTick - currentPlayer.positionBuffer[startIndex].tick);
+        float t = current / total;
+        auto inpterpolatedPosition = Vector2::lerp(currentPlayer.positionBuffer[startIndex].calculatedPosition, currentPlayer.positionBuffer[endIndex].calculatedPosition, t);
     }
-    for(int32 i=0;i<otherBullets.size();i++){
-        float distance = Vector2::distance(otherBullets[i].recievedPosition, otherBullets[i].position_);
-        otherBullets[i].position_ = Vector2::lerp(otherBullets[i].position_, otherBullets[i].recievedPosition, PLAYER_SPEED * distance * tickrate_.as_milliseconds());
+    for (int32 i = 0; i < otherBullets.size(); i++) {
+        int endIndex;
+        auto currentBullet = otherBullets[i];
+        for (int j = 0; j < otherBullets[i].positionBuffer.size(); j++) {
+            if (currentBullet.positionBuffer[j].tick > clientTick) {
+                endIndex = j;
+                break;
+            }
+        }
+        int startIndex = endIndex - 1;
+        float total = float(currentBullet.positionBuffer[endIndex].tick - currentBullet.positionBuffer[startIndex].tick);
+        float current = (float)(clientTick - currentBullet.positionBuffer[startIndex].tick);
+        float t = current / total;
+        auto inpterpolatedPosition = Vector2::lerp(currentBullet.positionBuffer[startIndex].calculatedPosition, currentBullet.positionBuffer[endIndex].calculatedPosition, t);
     }
 }
 
@@ -293,7 +315,10 @@ void ClientApp::on_receive(network::Connection* connection, network::NetworkStre
                     otherBullets.push_back(bullet);
                 }
                 else {
-                    (*otherPlayer).newPosition = message.position_;
+                    gameplay::Inputinator newPosition;
+                    newPosition.tick = message.tick_;
+                    newPosition.calculatedPosition = message.position_;
+                    (*otherPlayer).positionBuffer.push_back(newPosition);
                     (*otherPlayer).alive = message.alive_;
                 }
                 break;
